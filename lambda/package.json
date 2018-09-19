@@ -1,0 +1,11 @@
+{
+  "name": "manage-meetings-lambda-function",
+  "version": "1.0.0",
+  "description": "Lambda funciton and supporting files used to manage meetings",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Anthony Rella",
+  "license": "MIT"
+}

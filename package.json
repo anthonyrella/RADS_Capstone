@@ -1,0 +1,25 @@
+{
+  "name": "rads_capstone",
+  "version": "1.0.0",
+  "description": "Manage Meetings Alexa Skill",
+  "main": "lambda/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anthonyrella/RADS_Capstone.git"
+  },
+  "keywords": [
+    "Alexa",
+    "Skill",
+    "Graph",
+    "API"
+  ],
+  "author": "Anthony Rella",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/anthonyrella/RADS_Capstone/issues"
+  },
+  "homepage": "https://github.com/anthonyrella/RADS_Capstone#readme"
+}
