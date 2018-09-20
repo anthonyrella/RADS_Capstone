@@ -1,7 +1,10 @@
 'use strict';
 
 const Alexa = require('ask-sdk');
-const moment = require('moment')
+const moment = require('moment');
+const requesters = require('./requesters');
+const config = require('./config');
+
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
@@ -18,6 +21,7 @@ const LaunchRequestHandler = {
 };
 
 const FindRoomHandler = {
+
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && handlerInput.requestEnvelope.request.intent.name === 'FindRoom';
@@ -25,29 +29,132 @@ const FindRoomHandler = {
     handle(handlerInput) {
 
         const updatedIntent = handlerInput.requestEnvelope.request.intent;
-        
+
+        //if statement to validate duration is appropriate
         if (handlerInput.requestEnvelope.request.dialogState != "COMPLETED") {
+            console.log("Request incomplete");
             return handlerInput.responseBuilder
                 .addDelegateDirective()
                 .getResponse();
-                
+
         } else {
 
-            var speechOutput = moment.duration(handlerInput.requestEnvelope.request.intent.slots.Duration.value);
-            var totalTime = speechOutput.asHours().toString() + " hours";
-            if(speechOutput.asHours() < 1)
-            {
-                console.log("in if block");
-                 totalTime = speechOutput.asMinutes().toString() + " minutes";
-            }
-            return handlerInput.responseBuilder
-                .speak("The Time you've requested is " + totalTime)
-                .reprompt(totalTime)
+            const bookingDuration = moment.duration(handlerInput.requestEnvelope.request.intent.slots.Duration.value);
+            const startTime = new Date();
+            const endTime = new Date(startTime.getTime() + bookingDuration.asMilliseconds());
+
+            const attributes = handlerInput.attributesManager.getSessionAttributes();
+            let meetingroom = '';
+            // Save dates in attributes as ISO strings, so they can be accessed to post event.
+            attributes.startTime = startTime.toISOString();
+            attributes.endTime = endTime.toISOString();
+            attributes.duration = bookingDuration.toISOString();
+            attributes.durationInMinutes = Math.ceil(parseFloat(bookingDuration.asMinutes()));
+            handlerInput.attributesManager.setSessionAttributes(attributes);
+            
+            requesters.getCalendars(handlerInput.requestEnvelope.session.user.accessToken)
+                .then((parsedCals) => {
+                    console.log("in step 1");
+                    requesters.findFreeRoom(
+                        handlerInput.requestEnvelope.session.user.accessToken,
+                        attributes.startTime,
+                        attributes.endTime,
+                        config.testNames,
+                        parsedCals)
+                        .then((creds) => {
+                            console.log("in step 2");
+                            attributes.ownerAddress = creds.ownerAddress;
+                            attributes.ownerName = creds.ownerName;
+                            this.meetingroom = attributes.ownerName;
+                            handlerInput.attributesManager.setSessionAttributes(attributes);
+                        })
+                        // })
+                        // .then(() => {
+                        //     console.log("in step 3");
+                        //     console.log("Owner : " + attributes.ownerAddress);
+                        //     return attributes.ownerAddress;
+                        //     // return handlerInput.responseBuilder
+                        //     //     .speak("Found meeting room ")
+                        //     //     .reprompt("reprompt")
+                        //     //     .getResponse();
+
+                        // })
+                })
+                return handlerInput.responseBuilder
+                .speak('Found meeting room '+ this.attributes.ownerName +' . Would you like to book it?')
+                .reprompt(this.attributes.ownerName)
                 .getResponse();
+
         }
     }
 };
 
+const BookHandler = {
+
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+            && handlerInput.requestEnvelope.request.intent.name === 'BookRoom';
+    },
+    handle(handlerInput) {
+
+        const updatedIntent = handlerInput.requestEnvelope.request.intent;
+
+        var speechOutput = handlerInput.requestEnvelope.request.intent.slots.Duration.value;
+
+        console.log("in book handler");
+        return handlerInput.responseBuilder
+            .speak("The Time you've requested is " + speechOutput)
+            .reprompt(speechOutput)
+            .getResponse();
+
+    }
+
+
+
+};
+
+const YesHandler = {
+
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+            && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.YesIntent';
+    },
+    handle(handlerInput) {
+
+        const attributes = handlerInput.attributesManager.getSessionAttributes();
+
+
+        const speechText = attributes.Duration;
+
+
+        return handlerInput.responseBuilder
+            .speak("You said yes" + speechText)
+            .reprompt(speechText)
+            .withSimpleCard('Say room finder to find and book a room', speechText)
+            .getResponse();
+    }
+
+
+}
+
+const NoHandler = {
+
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+            && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.NoIntent';
+    },
+    handle(handlerInput) {
+        const speechText = "This is for when saying NO";
+
+
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt(speechText)
+            .withSimpleCard('Say room finder to find and book a room', speechText)
+            .getResponse();
+    }
+
+}
 
 const HelpIntentHandler = {
     canHandle(handlerInput) {
@@ -110,6 +217,8 @@ exports.handler = Alexa.SkillBuilders.custom()
     .addRequestHandlers(
         LaunchRequestHandler,
         FindRoomHandler,
+        YesHandler,
+        NoHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler)
