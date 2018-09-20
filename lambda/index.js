@@ -62,7 +62,7 @@ const FindRoomHandler = {
                 .then((parsedCals) => {
 
                     console.log("in step 1");
-                  var returno =  requesters.findFreeRoom(
+                    var returno = requesters.findFreeRoom(
                         handlerInput.requestEnvelope.session.user.accessToken,
                         attributes.startTime,
                         attributes.endTime,
@@ -76,17 +76,18 @@ const FindRoomHandler = {
                             attributes.ownerName = creds.ownerName;
                             handlerInput.attributesManager.setSessionAttributes(attributes);
                             console.log(handlerInput.attributesManager.getSessionAttributes().ownerName);
-                            handlerInput.requestEnvelope.request.dialogState = "COMPLETED"
                             return handlerInput.responseBuilder
-                            .speak(handlerInput.attributesManager.getSessionAttributes().ownerName + " is available, would you like to book it?")
-                            .getResponse();
+                                .speak(handlerInput.attributesManager.getSessionAttributes().ownerName + " is available, would you like to book it?")
+                                .withShouldEndSession(false)
+                                .getResponse();
+
                         })
 
-                     return returno;
-               
+                    return returno;
+
                 })
 
-                return meetingRoom;
+            return meetingRoom;
         }
 
     }
@@ -100,9 +101,7 @@ const BookHandler = {
     },
     handle(handlerInput) {
 
-        var speechOutput = handlerInput.attributesManager.getSessionAttributes().ownerName;
-
-        console.log("in book handler" + handlerInput.requestEnvelope.request.intent.name);
+        console.log("Im in book room now");
 
         return handlerInput.responseBuilder
             .speak("The Time you've requested is ")
@@ -124,17 +123,25 @@ const YesHandler = {
 
         const attributes = handlerInput.attributesManager.getSessionAttributes();
 
+        var meetingRoom =  requesters.postRoom(
+            handlerInput.requestEnvelope.session.user.accessToken,
+            attributes.ownerAddress,
+            attributes.ownerName,
+            attributes.startTime,
+            attributes.endTime)
+            .then(() => {
 
-        const speechText = attributes.duration;
+                return handlerInput.responseBuilder
+                    .speak(attributes.ownerName + " is now Booked!")
+                    .reprompt(attributes.ownerName + " is now Booked!")
+                    .withSimpleCard(attributes.ownerName + " is now Booked!")
+                    .getResponse();
 
+            });
+        
+            return meetingRoom;
 
-        return handlerInput.responseBuilder
-            .speak("You said yes" + speechText)
-            .reprompt(speechText)
-            .withSimpleCard('Say room finder to find and book a room', speechText)
-            .getResponse();
     }
-
 
 }
 
