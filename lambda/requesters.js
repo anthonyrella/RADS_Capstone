@@ -85,7 +85,6 @@ requesters.postRoom = function postRoom(token, ownerAddress, ownerName, startTim
  * @return {promise}      Promise resolved to JSON containing all calendars.
  */
 requesters.getCalendars = function getCalendars(token) {
-   
     const deferred = Q.defer();
 
     const toGet = {
@@ -97,8 +96,10 @@ requesters.getCalendars = function getCalendars(token) {
         },
     };
 
-    request.get(toGet, (err, response, body) => {
-        console.log(toGet);
+
+    request.get(toGet, (err, _response, body) => {
+
+      
         const parsedBody = JSON.parse(body);
       
 
@@ -125,7 +126,6 @@ requesters.getCalendars = function getCalendars(token) {
  */
 requesters.findFreeRoom = function findFreeRoom(token, startTime, endTime, names, parsedCals) {
     const deferred = Q.defer();
-
     /* For each calendar:
      * - check if its name is in 'names'.
      * - if it is in 'names', check if it's free.

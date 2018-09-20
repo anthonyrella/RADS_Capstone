@@ -4,6 +4,8 @@ const Alexa = require('ask-sdk');
 const moment = require('moment');
 const requesters = require('./requesters');
 const config = require('./config');
+const Q = require('q');
+
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
@@ -22,16 +24,20 @@ const LaunchRequestHandler = {
 
 const FindRoomHandler = {
 
+
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && handlerInput.requestEnvelope.request.intent.name === 'FindRoom';
     },
     handle(handlerInput) {
 
+        var deferred = Q.defer();
+
         const updatedIntent = handlerInput.requestEnvelope.request.intent;
 
         //if statement to validate duration is appropriate
         if (handlerInput.requestEnvelope.request.dialogState != "COMPLETED") {
+            console.log("Request incomplete");
             return handlerInput.responseBuilder
                 .addDelegateDirective()
                 .getResponse();
@@ -52,34 +58,37 @@ const FindRoomHandler = {
             handlerInput.attributesManager.setSessionAttributes(attributes);
 
 
-
-            requesters.getCalendars(handlerInput.requestEnvelope.session.user.accessToken)
+            var meetingRoom = requesters.getCalendars(handlerInput.requestEnvelope.session.user.accessToken)
                 .then((parsedCals) => {
-                   
 
-                    requesters.findFreeRoom(
+                    console.log("in step 1");
+                  var returno =  requesters.findFreeRoom(
                         handlerInput.requestEnvelope.session.user.accessToken,
                         attributes.startTime,
                         attributes.endTime,
                         config.testNames,
                         parsedCals)
                         .then((creds) => {
-
+                            console.log("in step 2");
+                            console.log(creds);
+                            const attributes = handlerInput.attributesManager.getSessionAttributes();
                             attributes.ownerAddress = creds.ownerAddress;
                             attributes.ownerName = creds.ownerName;
                             handlerInput.attributesManager.setSessionAttributes(attributes);
-
-
-                        }).then(() => {
-
+                            console.log(handlerInput.attributesManager.getSessionAttributes().ownerName);
+                            handlerInput.requestEnvelope.request.dialogState = "COMPLETED"
                             return handlerInput.responseBuilder
-                                .speak("Found meeting room " + attributes.ownerAddress + ". Would you like to book it?")
-                                .reprompt(attributes.ownerAddress)
-                                .getResponse();
-
+                            .speak(handlerInput.attributesManager.getSessionAttributes().ownerName + " is available, would you like to book it?")
+                            .getResponse();
                         })
+
+                     return returno;
+               
                 })
+
+                return meetingRoom;
         }
+
     }
 };
 
@@ -91,14 +100,12 @@ const BookHandler = {
     },
     handle(handlerInput) {
 
-        const updatedIntent = handlerInput.requestEnvelope.request.intent;
+        var speechOutput = handlerInput.attributesManager.getSessionAttributes().ownerName;
 
-        var speechOutput = handlerInput.requestEnvelope.request.intent.slots.Duration.value;
-
+        console.log("in book handler" + handlerInput.requestEnvelope.request.intent.name);
 
         return handlerInput.responseBuilder
-            .speak("The Time you've requested is " + speechOutput)
-            .reprompt(speechOutput)
+            .speak("The Time you've requested is ")
             .getResponse();
 
     }
@@ -118,7 +125,7 @@ const YesHandler = {
         const attributes = handlerInput.attributesManager.getSessionAttributes();
 
 
-        const speechText = attributes.Duration;
+        const speechText = attributes.duration;
 
 
         return handlerInput.responseBuilder
@@ -211,6 +218,7 @@ exports.handler = Alexa.SkillBuilders.custom()
     .addRequestHandlers(
         LaunchRequestHandler,
         FindRoomHandler,
+        BookHandler,
         YesHandler,
         NoHandler,
         HelpIntentHandler,

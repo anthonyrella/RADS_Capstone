@@ -3,7 +3,7 @@
  */
 
 // App ID of Alexa Skill
-const appId = 'amzn1.ask.skill.28027036-e61c-4396-9d11-a5157486944a';
+const appId = 'amzn1.ask.skill.1492be3f-007a-498f-938e-1fe051a33c3d';
 
 // Names of all meeting rooms to look for
 const testNames = ['First Room', 'Second Room', 'Third Room'];
