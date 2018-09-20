@@ -9,6 +9,9 @@
   "author": "Anthony Rella",
   "license": "MIT",
   "dependencies": {
-    "ask-sdk": "^2.0.9"
+    "ask-sdk": "^2.0.9",
+    "moment": "^2.22.2",
+    "q": "^1.5.1",
+    "request": "^2.88.0"
   }
 }
