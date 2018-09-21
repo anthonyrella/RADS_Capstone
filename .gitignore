@@ -59,3 +59,9 @@ typings/
 
 # next.js build output
 .next
+
+#config file due to app id
+.DS_Store
+lambda/.DS_Store
+lambda/Archive.zip
+lambda/config.js
