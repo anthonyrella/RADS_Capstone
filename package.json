@@ -21,5 +21,11 @@
   "bugs": {
     "url": "https://github.com/anthonyrella/RADS_Capstone/issues"
   },
-  "homepage": "https://github.com/anthonyrella/RADS_Capstone#readme"
+  "homepage": "https://github.com/anthonyrella/RADS_Capstone#readme",
+  "dependencies": {
+    "lambda-local": "^1.5.1",
+    "moment": "^2.22.2",
+    "q": "^1.5.1",
+    "request": "^2.88.0"
+  }
 }
