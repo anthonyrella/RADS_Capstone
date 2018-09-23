@@ -1,0 +1,125 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "manage meetings",
+      "intents": [
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": [
+            "Forget it",
+            "Cancel", 
+            "Cancel it"
+          ]
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": [
+            "help",
+            "I need help",
+            "Help please",
+            "Please help", 
+            "Please I need help"
+          ]
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": [
+            "Stop it",
+            "Stop"
+          ]
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "FindRoom",
+          "slots": [
+            {
+              "name": "Duration",
+              "type": "AMAZON.DURATION",
+              "samples": [
+                "{Duration}"
+              ]
+            }
+          ],
+          "samples": [
+            "Find room",
+            "Book room",
+            "Book meeting for {Duration}",
+            "Book a meeting for {Duration}",
+            "Book a room for {Duration}",
+            "Find a room for {Duration}",
+            "Book room for {Duration}",
+            "Find room for {Duration}"
+          ]
+        },
+        {
+          "name": "AMAZON.YesIntent",
+          "samples": [
+            "Yup",
+            "I would",
+            "Yes"
+          ]
+        },
+        {
+          "name": "AMAZON.NoIntent",
+          "samples": [
+            "I would not",
+            "No",
+            "Nope"
+          ]
+        },
+        {
+          "name": "BookRoom",
+          "samples": [
+            "Book Room"
+          ]
+        }
+      ]
+    },
+    "dialog": {
+      "intents": [
+        {
+          "name": "FindRoom",
+          "confirmationRequired": false,
+          "slots": [
+            {
+              "name": "Duration",
+              "type": "AMAZON.DURATION",
+              "elicitationRequired": true,
+              "confirmationRequired": false,
+              "prompts": {
+                "elicitation": "Elicit.Slot.421912611132.555796341531"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "prompts": [
+      {
+        "id": "Elicit.Slot.421912611132.555796341531",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "For how long?"
+          }
+        ]
+      },
+      {
+        "id": "Confirm.Intent.691075613620",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Just confirming"
+          }
+        ]
+      }
+    ]
+  }
+}

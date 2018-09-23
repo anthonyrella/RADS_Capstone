@@ -58,7 +58,7 @@ const FindRoomHandler = {
             handlerInput.attributesManager.setSessionAttributes(attributes);
 
 
-            var meetingRoom = requesters.getCalendars(handlerInput.requestEnvelope.session.user.accessToken)
+            var meetingRoom = requesters.retrieveCalendars(handlerInput.requestEnvelope.session.user.accessToken)
                 .then((parsedCals) => {
 
                     console.log("in step 1");
@@ -101,10 +101,8 @@ const BookHandler = {
     },
     handle(handlerInput) {
 
-        console.log("Im in book room now");
-
         return handlerInput.responseBuilder
-            .speak("The Time you've requested is ")
+            .speak("This is the book handler")
             .getResponse();
 
     }
@@ -123,7 +121,7 @@ const YesHandler = {
 
         const attributes = handlerInput.attributesManager.getSessionAttributes();
 
-        var meetingRoom =  requesters.postRoom(
+        var meetingRoom =  requesters.bookRoom(
             handlerInput.requestEnvelope.session.user.accessToken,
             attributes.ownerAddress,
             attributes.ownerName,
@@ -135,6 +133,7 @@ const YesHandler = {
                     .speak(attributes.ownerName + " is now Booked!")
                     .reprompt(attributes.ownerName + " is now Booked!")
                     .withSimpleCard(attributes.ownerName + " is now Booked!")
+                    .withShouldEndSession(true)
                     .getResponse();
 
             });

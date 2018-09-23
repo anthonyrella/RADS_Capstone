@@ -1,90 +1,34 @@
 /**
- * @file Functions to check room availability, and then create a meeting
- * on the calendar. All requests to Microsoft Graph API are made here.
+ * @file 
+ * 
+ * Contains support methods to communicate with Microsofts Graph API
+ * 
+ * Methods include:
+ * 1) Retrieving Calendars
+ * 2) Finding available times
+ * 3) Booking Room
  */
 
 'use strict';
 
-const request = require('request');
+// promises library
 const Q = require('q');
+// https requests library
+const request = require('request');
 
-const requesters = {}; // Requesters object to export - 'require'd by index.js
-
-/**
- * requesters.postRoom - Book a new event on a calendar using parameters as time.
- *
- * @param  {string} token          The JWT access token provided by the Alexa Skill.
- * @param  {string} ownerAddress   Address of owner of calendar to be booked.
- * @param  {string} ownerName      Name of owner of calendar to be booked.
- * @param  {string} startTime      Start time of meeting to post, formatted as ISO-8601 string.
- * @param  {string} endTime        End time of meeting to post, formatted as ISO-8601 string.
- * @return {promise}               Promise resolved to nothing.
- */
-requesters.postRoom = function postRoom(token, ownerAddress, ownerName, startTime, endTime) {
-    const deferred = Q.defer();
-
-    // Event to be made as JSON
-    const newEvent = {
-        Subject: 'Alexa\'s Meeting',
-        Start: {
-            DateTime: startTime,
-            TimeZone: 'UTC',
-        },
-        End: {
-            DateTime: endTime,
-            TimeZone: 'UTC',
-        },
-        Body: {
-            Content: 'This meeting was booked by Alexa.',
-            ContentType: 'Text',
-        },
-        Attendees: [{
-            Status: {
-                Response: 'NotResponded',
-                Time: startTime,
-            },
-            Type: 'Required',
-            EmailAddress: {
-                Address: ownerAddress,
-                Name: ownerName,
-            },
-        }],
-    };
-
-    const toPost = {
-        url: 'https://graph.microsoft.com/v1.0/me/events',
-        headers: {
-            'content-type': 'application/json',
-            authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(newEvent),
-    };
-
-    // Posts event
-
-    request.post(toPost, (err, response, body) => {
-        // TODO: Parsed body errors due to bad tokens aren't handled properly. Fix needed.
-        const parsedBody = JSON.parse(body);
-
-        if (err) {
-            deferred.reject(err);
-        } else if (parsedBody.error) {
-            deferred.reject(parsedBody.error);
-        } else {
-            deferred.resolve();
-        }
-    });
-    return deferred.promise;
-};
+// object to be exported by this module
+const requesters = {}; 
 
 
 /**
- * requesters.getCalendars - Retrieve all of user's calendars from API
+ * requesters.retrieveCalendars
+ * 
+ * Retrieves all the calendars associated with users mailbox
  *
  * @param  {string} token The JWT access token provided by the Alexa Skill
  * @return {promise}      Promise resolved to JSON containing all calendars.
  */
-requesters.getCalendars = function getCalendars(token) {
+requesters.retrieveCalendars = function retrieveCalendars(token) {
     const deferred = Q.defer();
 
     const toGet = {
@@ -115,7 +59,9 @@ requesters.getCalendars = function getCalendars(token) {
 };
 
 /**
- * requesters.findFreeRoom - Find a free calendar, given particular calendars to check.
+ * requesters.findFreeRoom 
+ * 
+ * Find a calendar with availability, given the particular calendars to check.
  *
  * @param  {string} token       The JWT access token provided by the Alexa Skill
  * @param  {string} startTime   The start time of the period to check, formatted as ISO-8601 string
@@ -177,4 +123,73 @@ requesters.findFreeRoom = function findFreeRoom(token, startTime, endTime, names
     return deferred.promise;
 };
 
-module.exports = requesters; // Export requesters.
+/**
+ * requesters.bookRoom - Book a new event on a calendar using parameters as time.
+ *
+ * @param  {string} token          The JWT access token provided by the Alexa Skill.
+ * @param  {string} ownerAddress   Address of owner of calendar to be booked.
+ * @param  {string} ownerName      Name of owner of calendar to be booked.
+ * @param  {string} startTime      Start time of meeting to post, formatted as ISO-8601 string.
+ * @param  {string} endTime        End time of meeting to post, formatted as ISO-8601 string.
+ * @return {promise}               Promise resolved to nothing.
+ */
+
+requesters.bookRoom = function bookRoom(token, ownerAddress, ownerName, startTime, endTime) {
+    const deferred = Q.defer();
+
+    // Event to be made as JSON
+    const newEvent = {
+        Subject: 'Alexa\'s Meeting',
+        Start: {
+            DateTime: startTime,
+            TimeZone: 'UTC',
+        },
+        End: {
+            DateTime: endTime,
+            TimeZone: 'UTC',
+        },
+        Body: {
+            Content: 'This meeting was booked by Alexa.',
+            ContentType: 'Text',
+        },
+        Attendees: [{
+            Status: {
+                Response: 'NotResponded',
+                Time: startTime,
+            },
+            Type: 'Required',
+            EmailAddress: {
+                Address: ownerAddress,
+                Name: ownerName,
+            },
+        }],
+    };
+
+    const toPost = {
+        url: 'https://graph.microsoft.com/v1.0/me/events',
+        headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newEvent),
+    };
+
+    // Posts event
+
+    request.post(toPost, (err, response, body) => {
+        // TODO: Parsed body errors due to bad tokens aren't handled properly. Fix needed.
+        const parsedBody = JSON.parse(body);
+
+        if (err) {
+            deferred.reject(err);
+        } else if (parsedBody.error) {
+            deferred.reject(parsedBody.error);
+        } else {
+            deferred.resolve();
+        }
+    });
+    return deferred.promise;
+};
+
+// exports the requesters object
+module.exports = requesters; 

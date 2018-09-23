@@ -65,3 +65,4 @@ typings/
 lambda/.DS_Store
 lambda/Archive.zip
 lambda/package.zip
+.ask/config 
