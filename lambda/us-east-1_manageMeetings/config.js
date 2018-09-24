@@ -1,5 +1,7 @@
 /**
- * @file Contains all config required to change rooms and skill.
+ * @file 
+ * 
+ * Main configuration file for Manage Meetings skill
  */
 
 // App ID of Alexa Skill

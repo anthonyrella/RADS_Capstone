@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/node_modules/lambda-local/bin/lambda-local", 
             "args": [
                 "-l",
-                "lambda\\index.js",
+                "lambda\\us-east-1_manageMeetings\\index.js",
                 "-h",
                 "handler",
                 "-e",

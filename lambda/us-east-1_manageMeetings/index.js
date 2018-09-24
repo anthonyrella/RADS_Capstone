@@ -1,12 +1,26 @@
+/**
+ * @file 
+ * 
+ * Main lambda function file. 
+ * 
+ * Contains:
+ * 1) All intent handlers
+ * 2) Support handlers
+ * 3) Main export function to lambda
+ */
+
 'use strict';
 
+// official node.js alexa v2 sdk.
 const Alexa = require('ask-sdk');
+// library for date usage
 const moment = require('moment');
+// support module to handle the Microsoft Graph API requests
 const requesters = require('./requesters');
+// support module containing application configuration information
 const config = require('./config');
-const Q = require('q');
 
-
+// Launch Handler is called when there is an invocation of skill without a specific intent called
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
@@ -22,6 +36,7 @@ const LaunchRequestHandler = {
     }
 };
 
+// Provides an option for an available room given the parameters. 
 const FindRoomHandler = {
 
 
@@ -31,13 +46,8 @@ const FindRoomHandler = {
     },
     handle(handlerInput) {
 
-        var deferred = Q.defer();
-
-        const updatedIntent = handlerInput.requestEnvelope.request.intent;
-
-        //if statement to validate duration is appropriate
+        // Handles eliciting required slots. Delegates the responsibility to the interaction model
         if (handlerInput.requestEnvelope.request.dialogState != "COMPLETED") {
-            console.log("Request incomplete");
             return handlerInput.responseBuilder
                 .addDelegateDirective()
                 .getResponse();
@@ -45,54 +55,65 @@ const FindRoomHandler = {
         } else {
 
             const bookingDuration = moment.duration(handlerInput.requestEnvelope.request.intent.slots.Duration.value);
-            const startTime = new Date();
-            const endTime = new Date(startTime.getTime() + bookingDuration.asMilliseconds());
+            const startTime = handlerInput.requestEnvelope.request.intent.slots.StartTime.value;
+            const endTime = moment(startTime, 'HH:mm').add(bookingDuration.asMinutes(), 'minutes').format('HH:mm');
+            const dateOfMeeting = handlerInput.requestEnvelope.request.intent.slots.Date.value;
 
+            // establishes variable to save slot information into the users session
             const attributes = handlerInput.attributesManager.getSessionAttributes();
 
             // Save dates in attributes as ISO strings, so they can be accessed to post event.
-            attributes.startTime = startTime.toISOString();
-            attributes.endTime = endTime.toISOString();
+            attributes.startTime = moment(dateOfMeeting + " " + startTime, "YYYY-MM-DD HH:mm").toISOString();
+            attributes.endTime = moment(dateOfMeeting + " " + endTime, "YYYY-MM-DD HH:mm").toISOString();
             attributes.duration = bookingDuration.toISOString();
             attributes.durationInMinutes = Math.ceil(parseFloat(bookingDuration.asMinutes()));
             handlerInput.attributesManager.setSessionAttributes(attributes);
 
-
-            var meetingRoom = requesters.retrieveCalendars(handlerInput.requestEnvelope.session.user.accessToken)
+            // retrieves all meeting room calendars
+            var meetingRoomCalendars = requesters.retrieveCalendars(handlerInput.requestEnvelope.session.user.accessToken)
                 .then((parsedCals) => {
 
-                    console.log("in step 1");
-                    var returno = requesters.findFreeRoom(
+                    // locates avaialbe room based on the parameters
+                    var freeRoom = requesters.findFreeRoom(
                         handlerInput.requestEnvelope.session.user.accessToken,
                         attributes.startTime,
                         attributes.endTime,
                         config.testNames,
                         parsedCals)
                         .then((creds) => {
-                            console.log("in step 2");
-                            console.log(creds);
-                            const attributes = handlerInput.attributesManager.getSessionAttributes();
-                            attributes.ownerAddress = creds.ownerAddress;
-                            attributes.ownerName = creds.ownerName;
-                            handlerInput.attributesManager.setSessionAttributes(attributes);
-                            console.log(handlerInput.attributesManager.getSessionAttributes().ownerName);
-                            return handlerInput.responseBuilder
-                                .speak(handlerInput.attributesManager.getSessionAttributes().ownerName + " is available, would you like to book it?")
-                                .withShouldEndSession(false)
-                                .getResponse();
+                           
+                            if(creds) {
+                                // if an available room exists, provides the suggestion, with a question to book the room. 
+                                const attributes = handlerInput.attributesManager.getSessionAttributes();
+                                attributes.ownerAddress = creds.ownerAddress;
+                                attributes.ownerName = creds.ownerName;
+                                handlerInput.attributesManager.setSessionAttributes(attributes);
+                                return handlerInput.responseBuilder
+                                    .speak(handlerInput.attributesManager.getSessionAttributes().ownerName + " is available, would you like to book it?")
+                                    .withShouldEndSession(false)
+                                    .getResponse();
+    
+                            }else {
+                                // provides message if no avaialble room exists. 
+                                return handlerInput.responseBuilder
+                                    .speak("No rooms are available at this time. Try again with another time")
+                                    .withShouldEndSession(true)
+                                    .getResponse();
+                            }
 
                         })
 
-                    return returno;
+                    return freeRoom;
 
                 })
 
-            return meetingRoom;
+            return meetingRoomCalendars;
         }
 
     }
 };
 
+// TODO: Have the YesIntent invoke the BookHandler with function logic to book room. 
 const BookHandler = {
 
     canHandle(handlerInput) {
@@ -111,6 +132,8 @@ const BookHandler = {
 
 };
 
+// Contains function logic to book room if user responded with Yes. 
+// TODO: Pass responsibility to BookHandler to perform book logic. Will need YesIntent for other responsibilities. Make this intent more modular with session variable flags. 
 const YesHandler = {
 
     canHandle(handlerInput) {
@@ -119,9 +142,12 @@ const YesHandler = {
     },
     handle(handlerInput) {
 
+        // receives current session variables
         const attributes = handlerInput.attributesManager.getSessionAttributes();
 
-        var meetingRoom =  requesters.bookRoom(
+        // TODO: Place check here to see if booking room is possible. 
+        // Calls bookroom function to perform booking. 
+        var meetingRoomCalendars = requesters.bookRoom(
             handlerInput.requestEnvelope.session.user.accessToken,
             attributes.ownerAddress,
             attributes.ownerName,
@@ -137,13 +163,15 @@ const YesHandler = {
                     .getResponse();
 
             });
-        
-            return meetingRoom;
+
+        return meetingRoomCalendars;
 
     }
 
 }
 
+// Handles users no response to booking question. 
+// TODO: Make more modular to handler other situations with session varaible check/flag. 
 const NoHandler = {
 
     canHandle(handlerInput) {
@@ -163,6 +191,7 @@ const NoHandler = {
 
 }
 
+// Provides basic skill help to user
 const HelpIntentHandler = {
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
@@ -180,6 +209,7 @@ const HelpIntentHandler = {
     }
 };
 
+// Handles users request to stop or cancel interaction. 
 const CancelAndStopIntentHandler = {
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
@@ -192,20 +222,26 @@ const CancelAndStopIntentHandler = {
         return handlerInput.responseBuilder
             .speak(speechText)
             .withSimpleCard('Goodbye!', speechText)
+            .withShouldEndSession(true)
             .getResponse();
     }
 };
 
+// Handles ending session.
+// TODO: Have this handler called from other handlers when ending session? 
 const SessionEndedRequestHandler = {
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'SessionEndedRequest';
     },
     handle(handlerInput) {
-        //any cleanup logic goes here
-        return handlerInput.responseBuilder.getResponse();
+     
+        return handlerInput.responseBuilder
+        .withShouldEndSession(true)
+        .getResponse();
     }
 };
 
+// Generic error handler to process skill errors. 
 const ErrorHandler = {
     canHandle() {
         return true;
@@ -220,8 +256,9 @@ const ErrorHandler = {
     },
 };
 
+// Main export handler. Processes and adds all above handlers. Executes Alexa code. 
 exports.handler = Alexa.SkillBuilders.custom()
-    .addRequestHandlers(
+    .addRequestHandlers( 
         LaunchRequestHandler,
         FindRoomHandler,
         BookHandler,
