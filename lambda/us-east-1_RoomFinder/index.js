@@ -14,7 +14,7 @@
 // official node.js alexa v2 sdk.
 const Alexa = require('ask-sdk');
 // library for date usage
-const moment = require('moment');
+const moment = require('moment-timezone');
 // support module to handle the Microsoft Graph API requests
 const requesters = require('./requesters');
 // support module containing application configuration information
@@ -63,8 +63,8 @@ const FindRoomHandler = {
             const attributes = handlerInput.attributesManager.getSessionAttributes();
 
             // Save dates in attributes as ISO strings, so they can be accessed to post event.
-            attributes.startTime = moment(dateOfMeeting + " " + startTime, "YYYY-MM-DD HH:mm").toISOString();
-            attributes.endTime = moment(dateOfMeeting + " " + endTime, "YYYY-MM-DD HH:mm").toISOString();
+            attributes.startTime = moment.tz(dateOfMeeting + " " + startTime, "America/Toronto").toISOString();
+            attributes.endTime = moment.tz(dateOfMeeting + " " + endTime, "America/Toronto").toISOString();
             attributes.duration = bookingDuration.toISOString();
             attributes.durationInMinutes = Math.ceil(parseFloat(bookingDuration.asMinutes()));
             handlerInput.attributesManager.setSessionAttributes(attributes);
