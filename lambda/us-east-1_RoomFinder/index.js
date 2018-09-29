@@ -12,13 +12,16 @@
 'use strict';
 
 // official node.js alexa v2 sdk.
-const Alexa = require('ask-sdk');
+const Alexa = require('ask-sdk-core');
 // library for date usage
 const moment = require('moment-timezone');
 // support module to handle the Microsoft Graph API requests
 const requesters = require('./requesters');
 // support module containing application configuration information
 const config = require('./config');
+
+// permissions to request full address from user
+const PERMISSIONS = ['read::alexa:device:all:address'];
 
 // Launch Handler is called when there is an invocation of skill without a specific intent called
 const LaunchRequestHandler = {
@@ -27,7 +30,7 @@ const LaunchRequestHandler = {
     },
     handle(handlerInput) {
         const speechText = 'Welcome to Manage Meetings, what would you like to do?';
-
+        console.log(speechText);
         return handlerInput.responseBuilder
             .speak(speechText)
             .reprompt(speechText)
@@ -53,7 +56,7 @@ const FindRoomHandler = {
                 .getResponse();
 
         } else {
-
+        
             const bookingDuration = moment.duration(handlerInput.requestEnvelope.request.intent.slots.Duration.value);
             const startTime = handlerInput.requestEnvelope.request.intent.slots.StartTime.value;
             const endTime = moment(startTime, 'HH:mm').add(bookingDuration.asMinutes(), 'minutes').format('HH:mm');
@@ -68,7 +71,7 @@ const FindRoomHandler = {
             attributes.duration = bookingDuration.toISOString();
             attributes.durationInMinutes = Math.ceil(parseFloat(bookingDuration.asMinutes()));
             handlerInput.attributesManager.setSessionAttributes(attributes);
-
+            
             // retrieves all meeting room calendars
             var meetingRoomCalendars = requesters.retrieveCalendars(handlerInput.requestEnvelope.session.user.accessToken)
                 .then((parsedCals) => {
@@ -81,7 +84,7 @@ const FindRoomHandler = {
                         config.testNames,
                         parsedCals)
                         .then((creds) => {
-                           
+                        
                             if(creds) {
                                 // if an available room exists, provides the suggestion, with a question to book the room. 
                                 const attributes = handlerInput.attributesManager.getSessionAttributes();
@@ -92,23 +95,23 @@ const FindRoomHandler = {
                                     .speak(handlerInput.attributesManager.getSessionAttributes().ownerName + " is available, would you like to book it?")
                                     .withShouldEndSession(false)
                                     .getResponse();
-    
-                            }else {
-                                // provides message if no avaialble room exists. 
-                                return handlerInput.responseBuilder
-                                    .speak("No rooms are available at this time. Try again with another time")
-                                    .withShouldEndSession(true)
-                                    .getResponse();
-                            }
 
-                        })
+                        }else {
+                            // provides message if no avaialble room exists. 
+                            return handlerInput.responseBuilder
+                                .speak("No rooms are available at this time. Try again with another time")
+                                .withShouldEndSession(true)
+                                .getResponse();
+                        }
 
-                    return freeRoom;
+                    })
 
-                })
+                return freeRoom;
 
+            })
+        
             return meetingRoomCalendars;
-        }
+        }   
 
     }
 };
@@ -131,6 +134,76 @@ const BookHandler = {
 
 
 };
+
+// add function to find device location (room location)
+// this location will be used when the user says "this" such as is "this" room free?
+const GetAddressHandler = {
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+            && handlerInput.requestEnvelope.request.intent.name === 'GetAddress';
+    },
+    async handle(handlerInput) {
+
+        const { requestEnvelope, serviceClientFactory, responseBuilder } = handlerInput;
+
+        const consentToken = requestEnvelope.context.System.user.permissions
+          && requestEnvelope.context.System.user.permissions.consentToken;
+        if (!consentToken) {
+            console.log("No permissions by the user");
+            return responseBuilder
+                .speak("The user has not yet accepted permissions to access device location." +
+                    "Please accept the permissions on your alexa app")
+                .withAskForPermissionsConsentCard(PERMISSIONS)
+                .getResponse();
+        }
+        try {
+            const deviceId = requestEnvelope.context.System.device.deviceId;
+            console.log(deviceId);
+            const deviceAddressServiceClient = serviceClientFactory.getDeviceAddressServiceClient();
+            console.log(deviceAddressServiceClient);
+            const address = await deviceAddressServiceClient.getFullAddress(deviceId);
+                
+            let response;
+            // save the room name in address line 1
+            if (address.addressLine1 === null) {
+                response = responseBuilder.speak("This device is not yet allocated to a specific room").getResponse();
+            } else {
+                console.log(address);
+                const ADDRESS_MESSAGE = "The room name is: " + address.addressLine2;
+                response = responseBuilder.speak(ADDRESS_MESSAGE).getResponse();
+            }
+            return response;
+
+        } catch (error) {
+            if (error.name !== 'ServiceError') {
+                console.log(error.name);
+                const response = responseBuilder.speak("Error but not service").getResponse();
+                return response;
+            }
+           throw error;
+        } 
+    }
+};
+
+//handle the error
+const GetAddressError = {
+    canHandle(handlerInput, error) {
+      return error.name === 'ServiceError';
+    },
+    handle(handlerInput, error) {
+      if (error.statusCode === 403) {
+        return handlerInput.responseBuilder
+          .speak("Missing permissions")
+          .withAskForPermissionsConsentCard(PERMISSIONS)
+          .getResponse();
+      }
+      console.log("location failure");
+      return handlerInput.responseBuilder
+        .speak("location failure")
+        .reprompt("location failure")
+        .getResponse();
+    },
+  };
 
 // Contains function logic to book room if user responded with Yes. 
 // TODO: Pass responsibility to BookHandler to perform book logic. Will need YesIntent for other responsibilities. Make this intent more modular with session variable flags. 
@@ -262,10 +335,12 @@ exports.handler = Alexa.SkillBuilders.custom()
         LaunchRequestHandler,
         FindRoomHandler,
         BookHandler,
+        GetAddressHandler,
         YesHandler,
         NoHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler)
-    .addErrorHandlers(ErrorHandler)
+    .addErrorHandlers(ErrorHandler, GetAddressError)
+    .withApiClient(new Alexa.DefaultApiClient())
     .lambda();

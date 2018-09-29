@@ -1,165 +1,187 @@
 {
-  "interactionModel": {
-      "languageModel": {
-          "invocationName": "manage meetings",
-          "intents": [
-              {
-                  "name": "AMAZON.FallbackIntent",
-                  "samples": []
-              },
-              {
-                  "name": "AMAZON.CancelIntent",
-                  "samples": [
-                      "Stop",
-                      "Forget it",
-                      "Cancel"
-                  ]
-              },
-              {
-                  "name": "AMAZON.HelpIntent",
-                  "samples": [
-                      "help",
-                      "I need help",
-                      "Help please"
-                  ]
-              },
-              {
-                  "name": "AMAZON.StopIntent",
-                  "samples": [
-                      "Cancel",
-                      "Stop"
-                  ]
-              },
-              {
-                  "name": "AMAZON.NavigateHomeIntent",
-                  "samples": []
-              },
-              {
-                  "name": "FindRoom",
-                  "slots": [
-                      {
-                          "name": "Duration",
-                          "type": "AMAZON.DURATION",
-                          "samples": [
-                              "{Duration}"
-                          ]
-                      },
-                      {
-                          "name": "Date",
-                          "type": "AMAZON.DATE",
-                          "samples": [
-                              "for {Date}",
-                              "{Date}",
-                              "on {Date}"
-                          ]
-                      },
-                      {
-                          "name": "StartTime",
-                          "type": "AMAZON.TIME",
-                          "samples": [
-                              "around {StartTime}",
-                              "at {StartTime}"
-                          ]
-                      }
-                  ],
-                  "samples": [
-                      "book a meeting {Date} for {Duration} starting at {StartTime}",
-                      "Book a meeting on {Date} at {StartTime} for  {Duration}",
-                      "Find room",
-                      "Book room",
-                      "Book meeting for {Duration}",
-                      "Book a meeting for {Duration}",
-                      "Book a room for {Duration}",
-                      "Find a room for {Duration}",
-                      "Book room for {Duration}",
-                      "Find room for {Duration}"
-                  ]
-              },
-              {
-                  "name": "AMAZON.YesIntent",
-                  "samples": [
-                      "Yes"
-                  ]
-              },
-              {
-                  "name": "AMAZON.NoIntent",
-                  "samples": [
-                      "no"
-                  ]
-              }
-          ],
-          "types": []
-      },
-      "dialog": {
-          "intents": [
-              {
-                  "name": "FindRoom",
-                  "confirmationRequired": false,
-                  "prompts": {},
-                  "slots": [
-                      {
-                          "name": "Duration",
-                          "type": "AMAZON.DURATION",
-                          "confirmationRequired": false,
-                          "elicitationRequired": true,
-                          "prompts": {
-                              "elicitation": "Elicit.Slot.421912611132.555796341531"
-                          }
-                      },
-                      {
-                          "name": "Date",
-                          "type": "AMAZON.DATE",
-                          "confirmationRequired": false,
-                          "elicitationRequired": true,
-                          "prompts": {
-                              "elicitation": "Elicit.Slot.89962495502.1199311406963"
-                          }
-                      },
-                      {
-                          "name": "StartTime",
-                          "type": "AMAZON.TIME",
-                          "confirmationRequired": false,
-                          "elicitationRequired": true,
-                          "prompts": {
-                              "elicitation": "Elicit.Slot.89962495502.483686878895"
-                          }
-                      }
-                  ]
-              }
-          ]
-      },
-      "prompts": [
-          {
-              "id": "Elicit.Slot.421912611132.555796341531",
-              "variations": [
-                  {
-                      "type": "PlainText",
-                      "value": "For how long?"
-                  }
-              ]
-          },
-          {
-              "id": "Elicit.Slot.89962495502.1199311406963",
-              "variations": [
-                  {
-                      "type": "PlainText",
-                      "value": "Please specify the date for this meeting"
-                  }
-              ]
-          },
-          {
-              "id": "Elicit.Slot.89962495502.483686878895",
-              "variations": [
-                  {
-                      "type": "PlainText",
-                      "value": "Please specify the start time"
-                  },
-                  {
-                      "type": "PlainText",
-                      "value": "At what time would you like to start the meeting?"
-                  }
-              ]
-          }
-      ]
-  }
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "room finder",
+            "intents": [
+                {
+                    "name": "AMAZON.FallbackIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": [
+                        "Stop",
+                        "Forget it",
+                        "Cancel"
+                    ]
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": [
+                        "help",
+                        "I need help",
+                        "Help please"
+                    ]
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": [
+                        "Cancel",
+                        "Stop"
+                    ]
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "FindRoom",
+                    "slots": [
+                        {
+                            "name": "Duration",
+                            "type": "AMAZON.DURATION",
+                            "samples": [
+                                "{Duration}"
+                            ]
+                        },
+                        {
+                            "name": "Date",
+                            "type": "AMAZON.DATE",
+                            "samples": [
+                                "for {Date}",
+                                "{Date}",
+                                "on {Date}"
+                            ]
+                        },
+                        {
+                            "name": "StartTime",
+                            "type": "AMAZON.TIME",
+                            "samples": [
+                                "around {StartTime}",
+                                "at {StartTime}"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "book a meeting {Date} for {Duration} starting at {StartTime}",
+                        "Book a meeting on {Date} at {StartTime} for  {Duration}",
+                        "Find room",
+                        "Book room",
+                        "Book meeting for {Duration}",
+                        "Book a meeting for {Duration}",
+                        "Book a room for {Duration}",
+                        "Find a room for {Duration}",
+                        "Book room for {Duration}",
+                        "Find room for {Duration}"
+                    ]
+                },
+                {
+                    "name": "AMAZON.YesIntent",
+                    "samples": [
+                        "Yes"
+                    ]
+                },
+                {
+                    "name": "AMAZON.NoIntent",
+                    "samples": [
+                        "no"
+                    ]
+                },
+                {
+                    "name": "GetAddress",
+                    "slots": [],
+                    "samples": [
+                        "Get device location",
+                        "what is the room number",
+                        "what room are you located in",
+                        "what is your address",
+                        "Where is this device located"
+                    ]
+                }
+            ],
+            "types": []
+        },
+        "dialog": {
+            "intents": [
+                {
+                    "name": "FindRoom",
+                    "confirmationRequired": true,
+                    "prompts": {
+                        "confirmation": "Confirm.Intent.256026591478"
+                    },
+                    "slots": [
+                        {
+                            "name": "Duration",
+                            "type": "AMAZON.DURATION",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.421912611132.555796341531"
+                            }
+                        },
+                        {
+                            "name": "Date",
+                            "type": "AMAZON.DATE",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.89962495502.1199311406963"
+                            }
+                        },
+                        {
+                            "name": "StartTime",
+                            "type": "AMAZON.TIME",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.89962495502.483686878895"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "prompts": [
+            {
+                "id": "Elicit.Slot.421912611132.555796341531",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "For how long?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.89962495502.1199311406963",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Please specify the date for this meeting"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.89962495502.483686878895",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Please specify the start time"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "At what time would you like to start the meeting?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Intent.256026591478",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "book meeting on {Date} for {Duration} starting at {StartTime} ?"
+                    }
+                ]
+            }
+        ]
+    }
 }
