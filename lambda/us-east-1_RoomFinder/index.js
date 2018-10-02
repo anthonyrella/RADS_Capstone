@@ -130,10 +130,100 @@ const BookHandler = {
             .getResponse();
 
     }
-
-
-
+        
 };
+
+// check room availability
+const CheckRoomAvailabilityHandler = {
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+            && handlerInput.requestEnvelope.request.intent.name === 'CheckRoomAvailability';
+    },
+    async handle(handlerInput) {
+    
+        const { requestEnvelope, serviceClientFactory, responseBuilder } = handlerInput;
+
+        const consentToken = requestEnvelope.context.System.user.permissions
+          && requestEnvelope.context.System.user.permissions.consentToken;
+        if (!consentToken) {
+            console.log("No permissions by the user");
+            return responseBuilder
+                .speak("The user has not yet accepted permissions to access device location." +
+                    "Please accept the permissions on your alexa app")
+                .withAskForPermissionsConsentCard(PERMISSIONS)
+                .getResponse();
+        }
+        try {
+            const deviceId = requestEnvelope.context.System.device.deviceId;
+            const deviceAddressServiceClient = serviceClientFactory.getDeviceAddressServiceClient();
+            const address = await deviceAddressServiceClient.getFullAddress(deviceId);
+                
+            let response;
+            // save the room name in address line 1
+            if (address.addressLine1 === null) {
+                response = responseBuilder.speak("This device is not yet allocated to a specific room").getResponse();
+            } else {
+                const attributes = handlerInput.attributesManager.getSessionAttributes();
+
+                // getting room email address
+                // user friendly name
+                attributes.roomName = address.addressLine1;
+                attributes.roomAddress = (address.roomName.replace(" ","") + "@capstonerads.onmicrosoft.com").toLocaleLowerCase();
+                console.log(attributes.roomAddress);
+                // add logic for free/busy
+                // getting today's date
+                attributes.dateOfMeeting = moment(Date.now()).format('YYYY-MM-DD');
+                //console.log(dateOfMeeting);
+                // hard coding the time to from day start to date end (work hours = 8 - 6pm)
+                attributes.startTime = moment.tz(attributes.dateOfMeeting + " 8:00" , "America/Toronto").toISOString();
+                attributes.endTime = moment.tz(attributes.dateOfMeeting + " 18:00" , "America/Toronto").toISOString();
+
+                handlerInput.attributesManager.setSessionAttributes(attributes);
+
+                var meetingRoomStatus = requesters.CheckRoomAvailability(
+                    handlerInput.requestEnvelope.session.user.accessToken,
+                    attributes.roomAddress,
+                    attributes.startTime,
+                    attributes.endTime)
+                    .then((creds) => {
+                        var randomText = "a";
+                        if(creds) {
+                            randomText = "Has meetings";
+                            attributes.roomAddress = creds.roomAddress;
+                            if (creds.numberOfMeetings > 0) {
+                                attributes.firstMeetingTime = moment(creds.firstMeetingTime).tz("America/Toronto").format('ha');
+                            }
+                        } else {
+                            randomText = "Has no meetings";
+                        }
+                        //process the response
+
+                        return handlerInput.responseBuilder
+                            .speak(attributes.roomName + " " + randomText + " and it starts at " + attributes.firstMeetingTime)
+                            .withSimpleCard(attributes.roomName + " " + attributes.firstMeetingTime)
+                            .withShouldEndSession(true)
+                            .getResponse();
+        
+                    }); 
+
+                    return meetingRoomStatus; 
+            }
+            return response;
+
+        } catch (error) {
+            if (error.name !== 'ServiceError') {
+                console.log(error.name);
+                const response = responseBuilder.speak("Error but not service" + error.name).getResponse();
+                return response;
+            }
+           throw error;
+        }     
+    }
+}
+
+// get device location may no longer be needed.
+//leaving it in case, we need to use it for book meeting in this room 
+// the function will be modified to accomondate this
 
 // add function to find device location (room location)
 // this location will be used when the user says "this" such as is "this" room free?
@@ -323,8 +413,8 @@ const ErrorHandler = {
         console.log(`Error handled: ${error.message}`);
 
         return handlerInput.responseBuilder
-            .speak('Sorry, I can\'t understand the command. Please say again.')
-            .reprompt('Sorry, I can\'t understand the command. Please say again.')
+            .speak('Sorry, I can\'t understand the command. Please say again.' + error.message)
+            .reprompt('Sorry, I can\'t understand the command. Please say again.' + error.message)
             .getResponse();
     },
 };
@@ -336,6 +426,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         FindRoomHandler,
         BookHandler,
         GetAddressHandler,
+        CheckRoomAvailabilityHandler,
         YesHandler,
         NoHandler,
         HelpIntentHandler,

@@ -191,5 +191,65 @@ requesters.bookRoom = function bookRoom(token, ownerAddress, ownerName, startTim
     return deferred.promise;
 };
 
+// check room schedule
+/**
+ * requesters.checkRoomAvailability - Check if the room is free for atleast 15 mins all day.
+ *
+ * @param  {string} token          The JWT access token provided by the Alexa Skill.
+ * @param  {string} roomAddress    Address of room of calendar to be check.
+ * @param  {string} startTime      Start time of meeting to check, formatted as ISO-8601 string.
+ * @param  {string} endTime        End time of meeting to post, formatted as ISO-8601 string.
+ * @return {promise}               Promise resolved to nothing.
+ */
+
+requesters.CheckRoomAvailability = function checkRoomAvail(token, ownerAddress, startTime, endTime) {
+    const deferred = Q.defer();
+
+    // Event to be made as JSON
+    const newEvent = {
+        schedules: [
+            ownerAddress
+        ],
+        startTime: {
+            dateTime: startTime,
+            timeZone: 'UTC'
+        },
+        endTime: {
+            dateTime: endTime,
+            timeZone: 'UTC'
+        },
+        availabilityViewInterval: '15'
+    }
+
+    const toPost = {
+        url: 'https://graph.microsoft.com/beta/me/calendar/getschedule',
+        headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newEvent),
+    };
+
+    // Posts event
+    request.post(toPost, (err, response, body) => {
+        // TODO: Parsed body errors due to bad tokens aren't handled properly. Fix needed.
+        const parsedBody = JSON.parse(body);
+
+        if (err) {
+            deferred.reject(err);
+        } else if (parsedBody.error) {
+            deferred.reject(parsedBody.error);
+        } else {
+            deferred.resolve({
+                // getting basic values to prove proof of concept
+                roomAddress: parsedBody.value[0].scheduleId,
+                numberOfMeetings: parsedBody.value[0].scheduleItems.length,
+                firstMeetingTime: parsedBody.value[0].scheduleItems[0].start.dateTime
+            });
+        }
+    });
+    return deferred.promise;
+};
+
 // exports the requesters object
 module.exports = requesters; 

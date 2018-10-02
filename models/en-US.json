@@ -97,6 +97,14 @@
                         "what is your address",
                         "Where is this device located"
                     ]
+                },
+                {
+                    "name": "CheckRoomAvailability",
+                    "slots": [],
+                    "samples": [
+                        "Is this room busy",
+                        "Is this room free"
+                    ]
                 }
             ],
             "types": []
