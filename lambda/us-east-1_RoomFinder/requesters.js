@@ -240,12 +240,26 @@ requesters.CheckRoomAvailability = function checkRoomAvail(token, ownerAddress, 
         } else if (parsedBody.error) {
             deferred.reject(parsedBody.error);
         } else {
-            deferred.resolve({
-                // getting basic values to prove proof of concept
-                roomAddress: parsedBody.value[0].scheduleId,
-                numberOfMeetings: parsedBody.value[0].scheduleItems.length,
-                firstMeetingTime: parsedBody.value[0].scheduleItems[0].start.dateTime
-            });
+            if(parsedBody.value.length > 0) {
+                if (parsedBody.value[0].scheduleItems.length > 0) {
+                    deferred.resolve({
+                    // getting basic values to prove proof of concept
+                        roomAddress: parsedBody.value[0].scheduleId,
+                        numberOfMeetings: parsedBody.value[0].scheduleItems.length,
+                        firstMeetingTime: parsedBody.value[0].scheduleItems[0].start.dateTime,
+                        endMeetingTime: parsedBody.value[0].scheduleItems[0].end.dateTime
+                    });    
+                } else {
+                    deferred.resolve({
+                        roomAddress: parsedBody.value[0].scheduleId,
+                        numberOfMeetings: 0,
+                        firstMeetingTime: null,
+                        endMeetingTime: null
+                    });
+                }
+            } else {
+                deferred.reject();
+            }
         }
     });
     return deferred.promise;

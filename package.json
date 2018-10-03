@@ -27,6 +27,7 @@
     "ask-sdk-model": "^1.6.0",
     "lambda-local": "^1.5.1",
     "moment": "^2.22.2",
+    "moment-duration-format": "^2.2.2",
     "moment-timezone": "^0.5.21",
     "q": "^1.5.1",
     "request": "^2.88.0"

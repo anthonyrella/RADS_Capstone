@@ -15,6 +15,7 @@
 const Alexa = require('ask-sdk-core');
 // library for date usage
 const moment = require('moment-timezone');
+require("moment-duration-format");
 // support module to handle the Microsoft Graph API requests
 const requesters = require('./requesters');
 // support module containing application configuration information
@@ -71,7 +72,7 @@ const FindRoomHandler = {
             attributes.duration = bookingDuration.toISOString();
             attributes.durationInMinutes = Math.ceil(parseFloat(bookingDuration.asMinutes()));
             handlerInput.attributesManager.setSessionAttributes(attributes);
-            
+             
             // retrieves all meeting room calendars
             var meetingRoomCalendars = requesters.retrieveCalendars(handlerInput.requestEnvelope.session.user.accessToken)
                 .then((parsedCals) => {
@@ -109,7 +110,7 @@ const FindRoomHandler = {
                 return freeRoom;
 
             })
-        
+
             return meetingRoomCalendars;
         }   
 
@@ -164,19 +165,18 @@ const CheckRoomAvailabilityHandler = {
                 response = responseBuilder.speak("This device is not yet allocated to a specific room").getResponse();
             } else {
                 const attributes = handlerInput.attributesManager.getSessionAttributes();
-
-                // getting room email address
                 // user friendly name
                 attributes.roomName = address.addressLine1;
-                attributes.roomAddress = (address.roomName.replace(" ","") + "@capstonerads.onmicrosoft.com").toLocaleLowerCase();
+                // getting room email address
+                attributes.roomAddress = (attributes.roomName.replace(" ","") + "@capstonerads.onmicrosoft.com").toLocaleLowerCase();
                 console.log(attributes.roomAddress);
-                // add logic for free/busy
                 // getting today's date
                 attributes.dateOfMeeting = moment(Date.now()).format('YYYY-MM-DD');
-                //console.log(dateOfMeeting);
-                // hard coding the time to from day start to date end (work hours = 8 - 6pm)
-                attributes.startTime = moment.tz(attributes.dateOfMeeting + " 8:00" , "America/Toronto").toISOString();
-                attributes.endTime = moment.tz(attributes.dateOfMeeting + " 18:00" , "America/Toronto").toISOString();
+
+                // get start time as current time
+                attributes.startTime = moment(Date.now()).toISOString(); // giving UTC time
+                // using 11:59 pm as end time
+                attributes.endTime = moment.tz(attributes.dateOfMeeting + " 23:59" , "America/Toronto").toISOString();
 
                 handlerInput.attributesManager.setSessionAttributes(attributes);
 
@@ -186,34 +186,52 @@ const CheckRoomAvailabilityHandler = {
                     attributes.startTime,
                     attributes.endTime)
                     .then((creds) => {
-                        var randomText = "a";
+                        var statusInfo = "";
                         if(creds) {
-                            randomText = "Has meetings";
+                            statusInfo = "Has creds";
                             attributes.roomAddress = creds.roomAddress;
                             if (creds.numberOfMeetings > 0) {
-                                attributes.firstMeetingTime = moment(creds.firstMeetingTime).tz("America/Toronto").format('ha');
+                                attributes.nFirstMeetingTime = moment(creds.firstMeetingTime).tz("America/Toronto").format('ha');
+                                attributes.nEndMeetingTime = moment(creds.endMeetingTime).tz("America/Toronto").format('ha');
+                                // check if start time, is equal to or before the current time
+                                // if yes, find end time
+                                // if no, say free room until start time of first minute
+
+                                var dCurrentTime = moment(creds.firstMeetingTime).diff(moment(Date.now()), "minutes");
+                                if(dCurrentTime >= 0) {
+                                    // since room is free - announce till when it is free
+                                    statusInfo = " is free until " + attributes.nFirstMeetingTime;
+                                } else {
+                                    // since room is busy, announce when current meeting will end
+                                    statusInfo = " is busy until " + attributes.nEndMeetingTime;
+                                }
+                                var diff = moment(creds.endMeetingTime).diff(moment(creds.firstMeetingTime), "minutes");
+                                attributes.diffTime = moment.duration(diff, "minutes").format("h [hours and] mm [minutes]");
+
+                            } else {
+                                statusInfo = "is free all day";
                             }
                         } else {
-                            randomText = "Has no meetings";
+                            statusInfo = "No result returned";
                         }
-                        //process the response
+                        handler.setSessionAttributes(attributes);
 
                         return handlerInput.responseBuilder
-                            .speak(attributes.roomName + " " + randomText + " and it starts at " + attributes.firstMeetingTime)
+                            .speak(attributes.roomName + " " + statusInfo)
                             .withSimpleCard(attributes.roomName + " " + attributes.firstMeetingTime)
                             .withShouldEndSession(true)
                             .getResponse();
-        
                     }); 
 
                     return meetingRoomStatus; 
             }
+
             return response;
 
         } catch (error) {
             if (error.name !== 'ServiceError') {
                 console.log(error.name);
-                const response = responseBuilder.speak("Error but not service" + error.name).getResponse();
+                const response = responseBuilder.speak("Error but not service" + error.message).getResponse();
                 return response;
             }
            throw error;
